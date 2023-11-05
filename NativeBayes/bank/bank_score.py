@@ -1,21 +1,24 @@
-from sklearn.feature_extraction.text import CountVectorizer
+import pandas as pd
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.model_selection import train_test_split
-import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 
 df = pd.read_csv("datasets/bank/bank.csv")
-
-text_columns = ['job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'month', 'poutcome']
-df['text'] = df[text_columns].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
-
-vectorizer = CountVectorizer()
-X = vectorizer.fit_transform(df['text'])
-y = df["deposit"]
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+df = pd.get_dummies(df, columns=['job', 'marital', 'education', "default", "housing", "loan", "contact", "month", "poutcome"])
+df["deposit"] = df["deposit"].map({"yes": 1, "no": 0})
 
 model = MultinomialNB()
-model.fit(X_train, y_train)
 
-res = model.score(X_test, y_test)
-print("Model Accuracy:", res)
+x = df.drop("deposit", axis=1)
+y = df["deposit"]
+
+scaler = MinMaxScaler()
+x_scaled = scaler.fit_transform(x)
+
+x_train, x_test, y_train, y_test = train_test_split(x_scaled, y, random_state=42, test_size=0.2)
+
+model.fit(x_train, y_train)
+
+score = model.score(x_test, y_test)
+
+print(score)
